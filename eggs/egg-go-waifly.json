@@ -1,0 +1,127 @@
+{
+    "_comment": "Egg exported by Waifly - custom Go Universal runtime, self-built images.",
+    "meta": {
+        "version": "PTDL_v2",
+        "update_url": "https://raw.githubusercontent.com/WaiflyHost/pterodactyl-eggs/main/eggs/egg-go-waifly.json"
+    },
+    "name": "Go Universal (Waifly)",
+    "author": "contact@waifly.com",
+    "description": "Generic Go egg using Waifly's own self-built images (ghcr.io/waiflyhost/go).\n\nClones a Git repo (or use USER_UPLOAD if you upload files yourself), builds it with `go build`, then runs the resulting binary. The binary is only rebuilt when missing or when AUTO_UPDATE is enabled, so restarts are fast.",
+    "features": null,
+    "docker_images": {
+        "Go 1.27": "ghcr.io/waiflyhost/go:1.27",
+        "Go 1.26": "ghcr.io/waiflyhost/go:1.26",
+        "Go 1.25": "ghcr.io/waiflyhost/go:1.25",
+        "Go 1.24": "ghcr.io/waiflyhost/go:1.24",
+        "Go 1.23": "ghcr.io/waiflyhost/go:1.23",
+        "Go 1.22": "ghcr.io/waiflyhost/go:1.22",
+        "Go 1.21": "ghcr.io/waiflyhost/go:1.21"
+    },
+    "file_denylist": [],
+    "startup": "if [[ -d .git ]] && [[ {{AUTO_UPDATE}} == \"1\" ]]; then git pull; fi; if [[ ! -f \"${BINARY_NAME}\" ]] || [[ \"${AUTO_UPDATE}\" == \"1\" ]]; then if [ -f go.mod ]; then go mod download; fi; go build -o \"${BINARY_NAME}\" ${BUILD_ARGS} \"${BUILD_PATH}\"; fi; ./\"${BINARY_NAME}\" ${RUN_ARGS}",
+    "config": {
+        "files": "{}",
+        "startup": "{\"done\":[\"change this text to something your app prints once it is ready\"]}",
+        "logs": "{}",
+        "stop": "^C"
+    },
+    "scripts": {
+        "installation": {
+            "script": "#!/bin/bash\n# Go App Installation Script (Waifly)\n#\n# Server Files: \/mnt\/server\napt update\napt install -y git curl unzip ca-certificates\n\nmkdir -p \/mnt\/server\ncd \/mnt\/server\n\nif [ \"${USER_UPLOAD}\" == \"true\" ] || [ \"${USER_UPLOAD}\" == \"1\" ]; then\n    echo -e \"USER_UPLOAD is set, skipping git clone. Upload your files manually.\"\n    exit 0\nfi\n\nif [[ ${GIT_ADDRESS} != *.git ]]; then\n    GIT_ADDRESS=${GIT_ADDRESS}.git\nfi\n\nif [ -z \"${USERNAME}\" ] && [ -z \"${ACCESS_TOKEN}\" ]; then\n    echo -e \"using anonymous git access\"\nelse\n    GIT_ADDRESS=\"https:\/\/${USERNAME}:${ACCESS_TOKEN}@$(echo -e ${GIT_ADDRESS} | cut -d\/ -f3-)\"\nfi\n\nif [ \"$(ls -A /mnt/server)\" ]; then\n    echo -e \"\/mnt\/server is not empty\"\n    if [ -d .git ]; then\n        ORIGIN=$(git config --get remote.origin.url)\n    fi\n    if [ \"${ORIGIN}\" == \"${GIT_ADDRESS}\" ]; then\n        echo -e \"pulling latest from git\"\n        git pull\n    fi\nelse\n    echo -e \"\/mnt\/server is empty, cloning repo\"\n    if [ -z \"${BRANCH}\" ]; then\n        git clone ${GIT_ADDRESS} .\n    else\n        git clone --single-branch --branch ${BRANCH} ${GIT_ADDRESS} .\n    fi\nfi\n\nif [ -f \/mnt\/server\/go.mod ]; then\n    echo \"Downloading go modules\"\n    go mod download || true\nfi\n\necho -e \"install complete\"\nexit 0",
+            "container": "golang:1.25-bookworm",
+            "entrypoint": "bash"
+        }
+    },
+    "variables": [
+        {
+            "name": "Git Repo Address",
+            "description": "GitHub\/GitLab repo to clone, e.g. https:\/\/github.com\/user\/repo",
+            "env_variable": "GIT_ADDRESS",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string"
+        },
+        {
+            "name": "Install Branch",
+            "description": "The branch to install. Leave empty for the default branch.",
+            "env_variable": "BRANCH",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string"
+        },
+        {
+            "name": "User Uploaded Files",
+            "description": "Skip the git clone if you are uploading files yourself.\n0 = false (default), 1 = true",
+            "env_variable": "USER_UPLOAD",
+            "default_value": "0",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|boolean"
+        },
+        {
+            "name": "Auto Update",
+            "description": "Pull the latest files from git and rebuild on every startup.",
+            "env_variable": "AUTO_UPDATE",
+            "default_value": "0",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|boolean"
+        },
+        {
+            "name": "Git Username",
+            "description": "Username to authenticate with git (optional, for private repos).",
+            "env_variable": "USERNAME",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string"
+        },
+        {
+            "name": "Git Access Token",
+            "description": "Personal access token to authenticate with git (optional, for private repos).",
+            "env_variable": "ACCESS_TOKEN",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string"
+        },
+        {
+            "name": "Binary name",
+            "description": "Name of the compiled binary that go build produces and that gets executed.",
+            "env_variable": "BINARY_NAME",
+            "default_value": "app",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|max:64|regex:/^[\\w.-]+$/"
+        },
+        {
+            "name": "Build path",
+            "description": "Package path passed to `go build` (the directory containing main.go, or a ./... pattern).",
+            "env_variable": "BUILD_PATH",
+            "default_value": ".",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|max:128"
+        },
+        {
+            "name": "Additional build arguments",
+            "description": "Extra flags passed to `go build`, e.g. -ldflags=\"-s -w\"",
+            "env_variable": "BUILD_ARGS",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string|max:256"
+        },
+        {
+            "name": "Additional run arguments",
+            "description": "Extra arguments passed to the compiled binary at runtime.",
+            "env_variable": "RUN_ARGS",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string|max:256"
+        }
+    ]
+}

@@ -5,7 +5,7 @@
         "update_url": "https://raw.githubusercontent.com/WaiflyHost/pterodactyl-eggs/main/eggs/egg-python-waifly.json"
     },
     "name": "Python Universal (Waifly)",
-    "author": "a.devogelaere@siweb.fr",
+    "author": "contact@waifly.com",
     "description": "Generic Python egg using Waifly's own self-built images (ghcr.io/waiflyhost/python), rebuilt regularly to track the latest minor\/patch releases instead of depending on a third-party image maintainer. Public, no authentication needed to pull.\n\nNo install script: upload your files yourself (SFTP or the file manager), then set the two startup commands below (e.g. \"pip install -r requirements.txt\" then \"python bot.py\").\n\nSource: https:\/\/github.com\/WaiflyHost\/pterodactyl-eggs",
     "features": null,
     "docker_images": {

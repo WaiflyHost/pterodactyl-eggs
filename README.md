@@ -56,3 +56,5 @@ These images are rebuilt periodically to track upstream security/patch releases.
 egg with the `update_url` pointing at this repo, the panel can re-check for egg updates from the admin
 UI - though re-fetching the JSON does not itself trigger a Docker image rebuild on your side (only its
 tag, e.g. `nodejs:22`, always resolves to the newest patch already built here).
+
+Need a version that isn't listed, or want us to prioritize a rebuild? Contact **contact@waifly.com**.

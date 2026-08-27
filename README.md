@@ -26,9 +26,12 @@ official Node image). Python images ship an up-to-date `pip`/`setuptools`/`wheel
 4. That's it - the egg's Docker Images list already points at the public GHCR images, nothing else to
    configure. Wings will pull them anonymously (no `docker login` needed).
 
-Both eggs use the same generic pattern: clone a Git repo (or set `USER_UPLOAD=1` if you upload files
-yourself), install dependencies, then run the app. See the egg's variables for details (`MAIN_FILE`,
-`NODE_ARGS` / `PY_FILE`, `PY_ARGS`, `AUTO_UPDATE`, etc.).
+Both eggs use the same pattern: no install script, you upload your own files (SFTP or the panel's file
+manager), then set two free-form shell commands - **Startup Command 1** (`STARTUP_CMD`, e.g. installing
+dependencies) runs first, then **Startup Command 2** (`SECOND_CMD`, e.g. starting the app) becomes the
+running process. Defaults are `npm install --save --production` / `node .` for Node, and
+`pip install -r requirements.txt` / `python bot.py` for Python - edit either field to whatever your app
+needs (including a `git clone ...` as part of Startup Command 1 if you'd rather deploy from a repo).
 
 ## Rebuilding the images yourself
 
@@ -41,10 +44,11 @@ docker build -t your-registry/python:3.12 --build-arg PYTHON_VERSION=3.12 docker
 ```
 
 The `entrypoint.sh` in each image reads the `STARTUP` environment variable that Wings sets (with
-`{{VARIABLE}}` placeholders), substitutes them, and executes the result - this is what makes the
-"generic" startup pattern (a raw `node`/`python3` command in the egg's Startup Command) work. `start.sh`
-is a convenience wrapper for eggs that use a fixed `/start.sh` startup command with `STARTUP_CMD` /
-`SECOND_CMD` variables (run first, then exec into second).
+`{{VARIABLE}}` placeholders), substitutes them, and executes the result - this is what any Pterodactyl
+runtime image needs to actually run whatever Startup Command the egg defines (Wings itself only sets
+the environment variables, it does not invoke the command for you). These eggs set the Startup Command
+to `/start.sh`, a small script also baked into the image that runs `STARTUP_CMD` then `exec`s into
+`SECOND_CMD` as the long-running process.
 
 ## Maintenance
 

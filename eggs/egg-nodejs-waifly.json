@@ -1,0 +1,130 @@
+{
+    "_comment": "Egg exported by Waifly - custom NodeJS Universal runtime, self-built images, public.",
+    "meta": {
+        "version": "PTDL_v2",
+        "update_url": "https://raw.githubusercontent.com/WaiflyHost/pterodactyl-eggs/main/eggs/egg-nodejs-waifly.json"
+    },
+    "name": "NodeJS Universal (Waifly)",
+    "author": "a.devogelaere@siweb.fr",
+    "description": "Generic Node.js egg using Waifly's own self-built images (ghcr.io/waiflyhost/nodejs), rebuilt regularly to track the latest minor\/patch releases instead of depending on a third-party image maintainer. Public, no authentication needed to pull.\n\nClones a Git repo (or use USER_UPLOAD if you upload files yourself), installs node_modules, then runs the app with node or ts-node.\n\nSource: https:\/\/github.com\/WaiflyHost\/pterodactyl-eggs",
+    "features": null,
+    "docker_images": {
+        "Node.js 26": "ghcr.io/waiflyhost/nodejs:26",
+        "Node.js 25": "ghcr.io/waiflyhost/nodejs:25",
+        "Node.js 24": "ghcr.io/waiflyhost/nodejs:24",
+        "Node.js 23": "ghcr.io/waiflyhost/nodejs:23",
+        "Node.js 22": "ghcr.io/waiflyhost/nodejs:22",
+        "Node.js 21": "ghcr.io/waiflyhost/nodejs:21",
+        "Node.js 20": "ghcr.io/waiflyhost/nodejs:20",
+        "Node.js 19": "ghcr.io/waiflyhost/nodejs:19",
+        "Node.js 18": "ghcr.io/waiflyhost/nodejs:18",
+        "Node.js 16": "ghcr.io/waiflyhost/nodejs:16"
+    },
+    "file_denylist": [],
+    "startup": "if [[ -d .git ]] && [[ {{AUTO_UPDATE}} == \"1\" ]]; then git pull; fi; if [[ ! -z ${NODE_PACKAGES} ]]; then npm install ${NODE_PACKAGES}; fi; if [[ ! -z ${UNNODE_PACKAGES} ]]; then npm uninstall ${UNNODE_PACKAGES}; fi; if [ -f /home/container/package.json ]; then npm install; fi; if [[ \"${MAIN_FILE}\" == *.ts ]]; then ts-node --esm \"/home/container/${MAIN_FILE}\" ${NODE_ARGS}; else node \"/home/container/${MAIN_FILE}\" ${NODE_ARGS}; fi",
+    "config": {
+        "files": "{}",
+        "startup": "{\"done\":[\"change this text to something your app prints once it is ready\"]}",
+        "logs": "{}",
+        "stop": "^C"
+    },
+    "scripts": {
+        "installation": {
+            "script": "#!/bin/bash\n# NodeJS App Installation Script (Waifly)\n#\n# Server Files: \/mnt\/server\napt update\napt install -y git curl unzip ca-certificates\n\nmkdir -p \/mnt\/server\ncd \/mnt\/server\n\nif [ \"${USER_UPLOAD}\" == \"true\" ] || [ \"${USER_UPLOAD}\" == \"1\" ]; then\n    echo -e \"USER_UPLOAD is set, skipping git clone. Upload your files manually.\"\n    exit 0\nfi\n\nif [[ ${GIT_ADDRESS} != *.git ]]; then\n    GIT_ADDRESS=${GIT_ADDRESS}.git\nfi\n\nif [ -z \"${USERNAME}\" ] && [ -z \"${ACCESS_TOKEN}\" ]; then\n    echo -e \"using anonymous git access\"\nelse\n    GIT_ADDRESS=\"https:\/\/${USERNAME}:${ACCESS_TOKEN}@$(echo -e ${GIT_ADDRESS} | cut -d\/ -f3-)\"\nfi\n\nif [ \"$(ls -A /mnt/server)\" ]; then\n    echo -e \"\/mnt\/server is not empty\"\n    if [ -d .git ]; then\n        ORIGIN=$(git config --get remote.origin.url)\n    fi\n    if [ \"${ORIGIN}\" == \"${GIT_ADDRESS}\" ]; then\n        echo -e \"pulling latest from git\"\n        git pull\n    fi\nelse\n    echo -e \"\/mnt\/server is empty, cloning repo\"\n    if [ -z \"${BRANCH}\" ]; then\n        git clone ${GIT_ADDRESS} .\n    else\n        git clone --single-branch --branch ${BRANCH} ${GIT_ADDRESS} .\n    fi\nfi\n\necho \"Installing npm packages\"\nif [[ ! -z ${NODE_PACKAGES} ]]; then\n    npm install ${NODE_PACKAGES}\nfi\n\nif [ -f \/mnt\/server\/package.json ]; then\n    npm install --production\nfi\n\necho -e \"install complete\"\nexit 0",
+            "container": "node:22-bookworm-slim",
+            "entrypoint": "bash"
+        }
+    },
+    "variables": [
+        {
+            "name": "Git Repo Address",
+            "description": "GitHub\/GitLab repo to clone, e.g. https:\/\/github.com\/user\/repo",
+            "env_variable": "GIT_ADDRESS",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string"
+        },
+        {
+            "name": "Install Branch",
+            "description": "The branch to install. Leave empty for the default branch.",
+            "env_variable": "BRANCH",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string"
+        },
+        {
+            "name": "User Uploaded Files",
+            "description": "Skip the git clone if you are uploading files yourself.\n0 = false (default), 1 = true",
+            "env_variable": "USER_UPLOAD",
+            "default_value": "0",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|boolean"
+        },
+        {
+            "name": "Auto Update",
+            "description": "Pull the latest files from git on every startup.",
+            "env_variable": "AUTO_UPDATE",
+            "default_value": "0",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|boolean"
+        },
+        {
+            "name": "Git Username",
+            "description": "Username to authenticate with git (optional, for private repos).",
+            "env_variable": "USERNAME",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string"
+        },
+        {
+            "name": "Git Access Token",
+            "description": "Personal access token to authenticate with git (optional, for private repos).",
+            "env_variable": "ACCESS_TOKEN",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string"
+        },
+        {
+            "name": "Additional NPM packages",
+            "description": "Additional npm packages to install, space separated.",
+            "env_variable": "NODE_PACKAGES",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string"
+        },
+        {
+            "name": "Uninstall NPM packages",
+            "description": "NPM packages to uninstall, space separated.",
+            "env_variable": "UNNODE_PACKAGES",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string"
+        },
+        {
+            "name": "Main file",
+            "description": "The file that starts the app. Can be .js or .ts",
+            "env_variable": "MAIN_FILE",
+            "default_value": "index.js",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|max:32"
+        },
+        {
+            "name": "Additional Arguments",
+            "description": "Any extra arguments passed to node\/ts-node.",
+            "env_variable": "NODE_ARGS",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string|max:64"
+        }
+    ]
+}

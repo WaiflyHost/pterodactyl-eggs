@@ -1,0 +1,137 @@
+{
+    "_comment": "Egg exported by Waifly - custom Python Universal runtime, self-built images, public.",
+    "meta": {
+        "version": "PTDL_v2",
+        "update_url": "https://raw.githubusercontent.com/WaiflyHost/pterodactyl-eggs/main/eggs/egg-python-waifly.json"
+    },
+    "name": "Python Universal (Waifly)",
+    "author": "a.devogelaere@siweb.fr",
+    "description": "Generic Python egg using Waifly's own self-built images (ghcr.io/waiflyhost/python), rebuilt regularly to track the latest minor\/patch releases instead of depending on a third-party image maintainer. Public, no authentication needed to pull.\n\nClones a Git repo (or use USER_UPLOAD if you upload files yourself), installs requirements.txt, then runs the app with python3.\n\nSource: https:\/\/github.com\/WaiflyHost\/pterodactyl-eggs",
+    "features": null,
+    "docker_images": {
+        "Python 3.14": "ghcr.io/waiflyhost/python:3.14",
+        "Python 3.13": "ghcr.io/waiflyhost/python:3.13",
+        "Python 3.12": "ghcr.io/waiflyhost/python:3.12",
+        "Python 3.11": "ghcr.io/waiflyhost/python:3.11",
+        "Python 3.10": "ghcr.io/waiflyhost/python:3.10",
+        "Python 3.9": "ghcr.io/waiflyhost/python:3.9",
+        "Python 3.8": "ghcr.io/waiflyhost/python:3.8",
+        "Python 2.7": "ghcr.io/waiflyhost/python:2.7"
+    },
+    "file_denylist": [],
+    "startup": "if [[ -d .git ]] && [[ {{AUTO_UPDATE}} == \"1\" ]]; then git pull; fi; if [ -f /home/container/${REQUIREMENTS_FILE} ]; then pip install --no-cache-dir --user -r \"/home/container/${REQUIREMENTS_FILE}\"; fi; if [[ ! -z ${PY_PACKAGES} ]]; then pip install --no-cache-dir --user ${PY_PACKAGES}; fi; if [[ ! -z ${UNPY_PACKAGES} ]]; then pip uninstall -y ${UNPY_PACKAGES}; fi; python3 \"/home/container/${PY_FILE}\" ${PY_ARGS}",
+    "config": {
+        "files": "{}",
+        "startup": "{\"done\":[\"change this text to something your app prints once it is ready\"]}",
+        "logs": "{}",
+        "stop": "^C"
+    },
+    "scripts": {
+        "installation": {
+            "script": "#!/bin/bash\n# Python App Installation Script (Waifly)\n#\n# Server Files: \/mnt\/server\napt update\napt install -y git curl unzip ca-certificates\n\nmkdir -p \/mnt\/server\ncd \/mnt\/server\n\nif [ \"${USER_UPLOAD}\" == \"true\" ] || [ \"${USER_UPLOAD}\" == \"1\" ]; then\n    echo -e \"USER_UPLOAD is set, skipping git clone. Upload your files manually.\"\n    exit 0\nfi\n\nif [[ ${GIT_ADDRESS} != *.git ]]; then\n    GIT_ADDRESS=${GIT_ADDRESS}.git\nfi\n\nif [ -z \"${USERNAME}\" ] && [ -z \"${ACCESS_TOKEN}\" ]; then\n    echo -e \"using anonymous git access\"\nelse\n    GIT_ADDRESS=\"https:\/\/${USERNAME}:${ACCESS_TOKEN}@$(echo -e ${GIT_ADDRESS} | cut -d\/ -f3-)\"\nfi\n\nif [ \"$(ls -A /mnt/server)\" ]; then\n    echo -e \"\/mnt\/server is not empty\"\n    if [ -d .git ]; then\n        ORIGIN=$(git config --get remote.origin.url)\n    fi\n    if [ \"${ORIGIN}\" == \"${GIT_ADDRESS}\" ]; then\n        echo -e \"pulling latest from git\"\n        git pull\n    fi\nelse\n    echo -e \"\/mnt\/server is empty, cloning repo\"\n    if [ -z \"${BRANCH}\" ]; then\n        git clone ${GIT_ADDRESS} .\n    else\n        git clone --single-branch --branch ${BRANCH} ${GIT_ADDRESS} .\n    fi\nfi\n\npip install --upgrade pip\n\nif [ -f \/mnt\/server\/${REQUIREMENTS_FILE} ]; then\n    echo \"Installing requirements from ${REQUIREMENTS_FILE}\"\n    pip install --no-cache-dir -r \/mnt\/server\/${REQUIREMENTS_FILE}\nfi\n\nif [[ ! -z ${PY_PACKAGES} ]]; then\n    pip install --no-cache-dir ${PY_PACKAGES}\nfi\n\necho -e \"install complete\"\nexit 0",
+            "container": "python:3.12-slim-bookworm",
+            "entrypoint": "bash"
+        }
+    },
+    "variables": [
+        {
+            "name": "Git Repo Address",
+            "description": "GitHub\/GitLab repo to clone, e.g. https:\/\/github.com\/user\/repo",
+            "env_variable": "GIT_ADDRESS",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string"
+        },
+        {
+            "name": "Install Branch",
+            "description": "The branch to install. Leave empty for the default branch.",
+            "env_variable": "BRANCH",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string"
+        },
+        {
+            "name": "User Uploaded Files",
+            "description": "Skip the git clone if you are uploading files yourself.\n0 = false (default), 1 = true",
+            "env_variable": "USER_UPLOAD",
+            "default_value": "0",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|boolean"
+        },
+        {
+            "name": "Auto Update",
+            "description": "Pull the latest files from git on every startup.",
+            "env_variable": "AUTO_UPDATE",
+            "default_value": "0",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|boolean"
+        },
+        {
+            "name": "Git Username",
+            "description": "Username to authenticate with git (optional, for private repos).",
+            "env_variable": "USERNAME",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string"
+        },
+        {
+            "name": "Git Access Token",
+            "description": "Personal access token to authenticate with git (optional, for private repos).",
+            "env_variable": "ACCESS_TOKEN",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string"
+        },
+        {
+            "name": "Requirements file",
+            "description": "The requirements file to install with pip on startup and install.",
+            "env_variable": "REQUIREMENTS_FILE",
+            "default_value": "requirements.txt",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|max:64"
+        },
+        {
+            "name": "Additional pip packages",
+            "description": "Additional pip packages to install, space separated.",
+            "env_variable": "PY_PACKAGES",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string"
+        },
+        {
+            "name": "Uninstall pip packages",
+            "description": "Pip packages to uninstall, space separated.",
+            "env_variable": "UNPY_PACKAGES",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string"
+        },
+        {
+            "name": "Main file",
+            "description": "The Python file that starts the app.",
+            "env_variable": "PY_FILE",
+            "default_value": "main.py",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|max:32"
+        },
+        {
+            "name": "Additional Arguments",
+            "description": "Any extra arguments passed to python3.",
+            "env_variable": "PY_ARGS",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string|max:64"
+        }
+    ]
+}

@@ -14,6 +14,8 @@ minor/patch release. All images are public on GHCR - no authentication needed to
 - **Python**: 2.7, 3.8, 3.9, 3.10, 3.11, 3.12, 3.13, 3.14 - `ghcr.io/waiflyhost/python:<version>`
 - **Go**: 1.21 - 1.27 - `ghcr.io/waiflyhost/go:<version>`
 - **Nginx + PHP-FPM**: PHP 8.1 - 8.4 - `ghcr.io/waiflyhost/nginx-php:<version>`
+- **Node.js + Python (combined)**: single image with both toolchains, version picked independently at
+  runtime via egg variables - `ghcr.io/waiflyhost/node-python:latest`
 
 Node images ship `typescript`, `ts-node`, `pm2`, `pnpm` (and `yarn`, bundled by the official Node
 image). Python images ship an up-to-date `pip`/`setuptools`/`wheel`/`virtualenv`. Go images ship the
@@ -29,7 +31,8 @@ gd, mbstring, xml, zip, bcmath, intl, opcache, sqlite3, imagick). All images inc
    [`egg-nodejs-waifly.json`](eggs/egg-nodejs-waifly.json),
    [`egg-python-waifly.json`](eggs/egg-python-waifly.json),
    [`egg-go-waifly.json`](eggs/egg-go-waifly.json),
-   [`egg-nginx-php-waifly.json`](eggs/egg-nginx-php-waifly.json).
+   [`egg-nginx-php-waifly.json`](eggs/egg-nginx-php-waifly.json),
+   [`egg-node-python-waifly.json`](eggs/egg-node-python-waifly.json).
 4. That's it - each egg's Docker Images list already points at the public GHCR images, nothing else to
    configure. Wings will pull them anonymously (no `docker login` needed).
 
@@ -58,6 +61,15 @@ needed). There is no exposed nginx config field and no `proxy_pass` target a cus
 internal infrastructure. Clones a Git repo into webroot/www (or use `USER_UPLOAD`); set `COMPOSER_MODULES`
 to have Composer packages installed on startup.
 
+### Node.js + Python (combined)
+
+One image, both toolchains (several versions each of Node.js and Python), so you don't need to
+maintain two eggs for apps that could be either. Clones a Git repo (or use `USER_UPLOAD`), then
+installs and runs the app. Set `RUNTIME` to `node` or `python`, and pick the exact version with
+`NODE_VERSION` / `PYTHON_VERSION` - independently of `RUNTIME`, so switching runtime later doesn't
+lose your version choice. `MAIN_FILE` / `NODE_PACKAGES` / `NODE_ARGS` apply when `RUNTIME=node`;
+`PY_FILE` / `REQUIREMENTS_FILE` / `PY_PACKAGES` / `PY_ARGS` apply when `RUNTIME=python`.
+
 ## Rebuilding the images yourself
 
 The `docker/` directory has the exact Dockerfiles and scripts used to build these images, in case you'd
@@ -68,6 +80,7 @@ docker build -t your-registry/nodejs:22    --build-arg NODE_VERSION=22    docker
 docker build -t your-registry/python:3.12  --build-arg PYTHON_VERSION=3.12 docker/python
 docker build -t your-registry/go:1.25      --build-arg GO_VERSION=1.25    docker/go
 docker build -t your-registry/nginx-php:8.4 --build-arg PHP_VERSION=8.4   docker/nginx-php
+docker build -t your-registry/node-python:latest                          docker/node-python
 ```
 
 The `entrypoint.sh` in the nodejs/python/go images reads the `STARTUP` environment variable that Wings

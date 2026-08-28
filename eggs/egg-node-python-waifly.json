@@ -1,0 +1,193 @@
+{
+    "_comment": "Egg exported by Waifly - custom combined NodeJS + Python runtime, self-built image. Version of each runtime selectable independently.",
+    "meta": {
+        "version": "PTDL_v2",
+        "update_url": null
+    },
+    "name": "NodeJS + Python Universal (Waifly)",
+    "author": "a.devogelaere@siweb.fr",
+    "description": "Combined Node.js + Python egg using Waifly's own self-built image (eggs.waifly.com/waifly-eggs/node-python). Both toolchains are installed in the same image with several versions each; pick RUNTIME (node or python) and the exact version of that runtime independently via NODE_VERSION / PYTHON_VERSION.\n\nClones a Git repo (or use USER_UPLOAD if you upload files yourself), installs dependencies (node_modules or requirements.txt depending on RUNTIME), then runs the app.",
+    "features": null,
+    "docker_images": {
+        "NodeJS + Python (Waifly)": "ghcr.io/waiflyhost/node-python:latest"
+    },
+    "file_denylist": [],
+    "startup": "/start.sh",
+    "config": {
+        "files": "{}",
+        "startup": "{\"done\":[\"change this text to something your app prints once it is ready\"]}",
+        "logs": "{}",
+        "stop": "^C"
+    },
+    "scripts": {
+        "installation": {
+            "script": "#!/bin/bash\n# Node.js + Python App Installation Script (Waifly combo egg)\n#\n# Server Files: /mnt/server\n\nNODE_VERSION=\"${NODE_VERSION:-22}\"\nPYTHON_VERSION=\"${PYTHON_VERSION:-3.12.7}\"\n\nif [[ -d \"/usr/local/nodeversions/${NODE_VERSION}/bin\" ]]; then\n    export PATH=\"/usr/local/nodeversions/${NODE_VERSION}/bin:${PATH}\"\nelse\n    export PATH=\"/usr/local/nodeversions/22/bin:${PATH}\"\nfi\nexport PYENV_VERSION=\"${PYTHON_VERSION}\"\n\nmkdir -p /mnt/server\ncd /mnt/server\n\nif [ \"${USER_UPLOAD}\" == \"true\" ] || [ \"${USER_UPLOAD}\" == \"1\" ]; then\n    echo -e \"USER_UPLOAD is set, skipping git clone. Upload your files manually.\"\n    exit 0\nfi\n\nif [[ ${GIT_ADDRESS} != *.git ]]; then\n    GIT_ADDRESS=${GIT_ADDRESS}.git\nfi\n\nif [ -z \"${USERNAME}\" ] && [ -z \"${ACCESS_TOKEN}\" ]; then\n    echo -e \"using anonymous git access\"\nelse\n    GIT_ADDRESS=\"https://${USERNAME}:${ACCESS_TOKEN}@$(echo -e ${GIT_ADDRESS} | cut -d/ -f3-)\"\nfi\n\nif [ \"$(ls -A /mnt/server)\" ]; then\n    echo -e \"/mnt/server is not empty\"\n    if [ -d .git ]; then\n        ORIGIN=$(git config --get remote.origin.url)\n    fi\n    if [ \"${ORIGIN}\" == \"${GIT_ADDRESS}\" ]; then\n        echo -e \"pulling latest from git\"\n        git pull\n    fi\nelse\n    echo -e \"/mnt/server is empty, cloning repo\"\n    if [ -z \"${BRANCH}\" ]; then\n        git clone ${GIT_ADDRESS} .\n    else\n        git clone --single-branch --branch ${BRANCH} ${GIT_ADDRESS} .\n    fi\nfi\n\nif [ \"${RUNTIME}\" == \"python\" ]; then\n    pip install --upgrade pip\n    if [ -f \"/mnt/server/${REQUIREMENTS_FILE}\" ]; then\n        echo \"Installing requirements from ${REQUIREMENTS_FILE}\"\n        pip install --no-cache-dir -r \"/mnt/server/${REQUIREMENTS_FILE}\"\n    fi\n    if [[ ! -z ${PY_PACKAGES} ]]; then\n        pip install --no-cache-dir ${PY_PACKAGES}\n    fi\nelse\n    echo \"Installing npm packages\"\n    if [[ ! -z ${NODE_PACKAGES} ]]; then\n        npm install ${NODE_PACKAGES}\n    fi\n    if [ -f /mnt/server/package.json ]; then\n        npm install --production\n    fi\nfi\n\necho -e \"install complete\"\nexit 0\n",
+            "container": "ghcr.io/waiflyhost/node-python:latest",
+            "entrypoint": "bash"
+        }
+    },
+    "variables": [
+        {
+            "name": "Runtime",
+            "description": "Which runtime to use: node or python.",
+            "env_variable": "RUNTIME",
+            "default_value": "node",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|in:node,python"
+        },
+        {
+            "name": "Node.js Version",
+            "description": "Node.js version to use when RUNTIME=node. One of: 16, 18, 19, 20, 21, 22, 23, 24, 25, 26.",
+            "env_variable": "NODE_VERSION",
+            "default_value": "22",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|in:16,18,19,20,21,22,23,24,25,26"
+        },
+        {
+            "name": "Python Version",
+            "description": "Python version to use when RUNTIME=python. One of: 3.8.20, 3.9.20, 3.10.15, 3.11.10, 3.12.7, 3.13.0, 3.14.0.",
+            "env_variable": "PYTHON_VERSION",
+            "default_value": "3.12.7",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|in:3.8.20,3.9.20,3.10.15,3.11.10,3.12.7,3.13.0,3.14.0"
+        },
+        {
+            "name": "Git Repo Address",
+            "description": "GitHub/GitLab repo to clone, e.g. https://github.com/user/repo",
+            "env_variable": "GIT_ADDRESS",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string"
+        },
+        {
+            "name": "Install Branch",
+            "description": "The branch to install. Leave empty for the default branch.",
+            "env_variable": "BRANCH",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string"
+        },
+        {
+            "name": "User Uploaded Files",
+            "description": "Skip the git clone if you are uploading files yourself.\n0 = false (default), 1 = true",
+            "env_variable": "USER_UPLOAD",
+            "default_value": "0",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|boolean"
+        },
+        {
+            "name": "Auto Update",
+            "description": "Pull the latest files from git on every startup.",
+            "env_variable": "AUTO_UPDATE",
+            "default_value": "0",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|boolean"
+        },
+        {
+            "name": "Git Username",
+            "description": "Username to authenticate with git (optional, for private repos).",
+            "env_variable": "USERNAME",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string"
+        },
+        {
+            "name": "Git Access Token",
+            "description": "Personal access token to authenticate with git (optional, for private repos).",
+            "env_variable": "ACCESS_TOKEN",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string"
+        },
+        {
+            "name": "Main file (Node.js)",
+            "description": "The file that starts the app when RUNTIME=node. Can be .js or .ts",
+            "env_variable": "MAIN_FILE",
+            "default_value": "index.js",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string|max:32"
+        },
+        {
+            "name": "Additional NPM packages",
+            "description": "Additional npm packages to install, space separated.",
+            "env_variable": "NODE_PACKAGES",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string"
+        },
+        {
+            "name": "Uninstall NPM packages",
+            "description": "NPM packages to uninstall, space separated.",
+            "env_variable": "UNNODE_PACKAGES",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string"
+        },
+        {
+            "name": "Additional Node Arguments",
+            "description": "Any extra arguments passed to node/ts-node.",
+            "env_variable": "NODE_ARGS",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string|max:64"
+        },
+        {
+            "name": "Main file (Python)",
+            "description": "The Python file that starts the app when RUNTIME=python.",
+            "env_variable": "PY_FILE",
+            "default_value": "main.py",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string|max:32"
+        },
+        {
+            "name": "Requirements file",
+            "description": "The requirements file to install with pip on startup and install, when RUNTIME=python.",
+            "env_variable": "REQUIREMENTS_FILE",
+            "default_value": "requirements.txt",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string|max:64"
+        },
+        {
+            "name": "Additional pip packages",
+            "description": "Additional pip packages to install, space separated.",
+            "env_variable": "PY_PACKAGES",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string"
+        },
+        {
+            "name": "Uninstall pip packages",
+            "description": "Pip packages to uninstall, space separated.",
+            "env_variable": "UNPY_PACKAGES",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string"
+        },
+        {
+            "name": "Additional Python Arguments",
+            "description": "Any extra arguments passed to python3.",
+            "env_variable": "PY_ARGS",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string|max:64"
+        }
+    ]
+}

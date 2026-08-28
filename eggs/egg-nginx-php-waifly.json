@@ -2,11 +2,11 @@
     "_comment": "Egg exported by Waifly - custom Nginx+PHP-FPM WebHost runtime, self-built images. Bounded on purpose: serves only /home/container/webroot, no customer-editable nginx config or proxy_pass target.",
     "meta": {
         "version": "PTDL_v2",
-        "update_url": "https://raw.githubusercontent.com/WaiflyHost/pterodactyl-eggs/main/eggs/egg-nginx-php-waifly.json"
+        "update_url": null
     },
     "name": "WebHost Nginx+PHP (Waifly)",
     "author": "contact@waifly.com",
-    "description": "Static/PHP web hosting egg using Waifly's own self-built images (ghcr.io/waiflyhost/nginx-php). Nginx + PHP-FPM run together in the container and serve ONLY /home/container/webroot (or /home/container/www if that already exists - e.g. migrating from another nginx egg, no rename needed) - there is no exposed nginx config field and no proxy_pass target a customer could point at internal infrastructure. Not a general-purpose reverse proxy.\n\nClones a Git repo into webroot (or use USER_UPLOAD if you upload files yourself). Composer is available if COMPOSER_MODULES is set.",
+    "description": "Static/PHP web hosting egg using Waifly's own self-built images (eggs.waifly.com/waifly-eggs/nginx-php). Nginx + PHP-FPM run together in the container and serve ONLY /home/container/webroot (or /home/container/www if that already exists - e.g. migrating from another nginx egg, no rename needed) - there is no exposed nginx config field and no proxy_pass target a customer could point at internal infrastructure. Not a general-purpose reverse proxy.\n\nClones a Git repo into webroot (or use USER_UPLOAD if you upload files yourself). Composer is available if COMPOSER_MODULES is set.",
     "features": null,
     "docker_images": {
         "PHP 8.4": "ghcr.io/waiflyhost/nginx-php:8.4",
@@ -25,7 +25,7 @@
     "scripts": {
         "installation": {
             "script": "#!/bin/bash\n# WebHost (nginx+PHP-FPM) Installation Script (Waifly)\n#\n# Server Files: /mnt/server\napt update\napt install -y git curl unzip ca-certificates\n\ncd /mnt/server\n\n# Accept either an existing www/ (legacy layout, e.g. migrated from another nginx egg) or\n# webroot/ (this egg's default for fresh installs). webroot wins if both somehow exist.\nif [[ -d webroot ]]; then\n    TARGET=\"webroot\"\nelif [[ -d www ]]; then\n    TARGET=\"www\"\nelse\n    TARGET=\"webroot\"\n    mkdir -p webroot\nfi\n\nif [ \"${USER_UPLOAD}\" == \"true\" ] || [ \"${USER_UPLOAD}\" == \"1\" ]; then\n    echo -e \"USER_UPLOAD is set, skipping git clone. Upload your site into the ${TARGET}/ folder manually.\"\n    exit 0\nfi\n\nif [[ ${GIT_ADDRESS} != *.git ]]; then\n    GIT_ADDRESS=${GIT_ADDRESS}.git\nfi\n\nif [ -z \"${USERNAME}\" ] && [ -z \"${ACCESS_TOKEN}\" ]; then\n    echo -e \"using anonymous git access\"\nelse\n    GIT_ADDRESS=\"https://${USERNAME}:${ACCESS_TOKEN}@$(echo -e ${GIT_ADDRESS} | cut -d/ -f3-)\"\nfi\n\ncd \"${TARGET}\"\n\nif [ \"$(ls -A .)\" ]; then\n    echo -e \"${TARGET} is not empty\"\n    if [ -d .git ]; then\n        ORIGIN=$(git config --get remote.origin.url)\n    fi\n    if [ \"${ORIGIN}\" == \"${GIT_ADDRESS}\" ]; then\n        echo -e \"pulling latest from git\"\n        git pull\n    fi\nelse\n    echo -e \"${TARGET} is empty, cloning repo\"\n    if [ -z \"${BRANCH}\" ]; then\n        git clone ${GIT_ADDRESS} .\n    else\n        git clone --single-branch --branch ${BRANCH} ${GIT_ADDRESS} .\n    fi\nfi\n\necho -e \"install complete\"\nexit 0\n",
-            "container": "debian:bookworm-slim",
+            "container": "ghcr.io/waiflyhost/nginx-php:8.4",
             "entrypoint": "bash"
         }
     },
@@ -88,6 +88,15 @@
             "name": "Composer packages",
             "description": "Composer packages to require on startup, space separated (e.g. monolog/monolog). Leave empty to skip.",
             "env_variable": "COMPOSER_MODULES",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string"
+        },
+        {
+            "name": "Cloudflare Tunnel Token",
+            "description": "Optional. If this domain uses a Cloudflare Tunnel, paste its connector token here (Cloudflare dashboard -> Zero Trust -> Networks -> Tunnels). Leave empty to serve normally without a tunnel.",
+            "env_variable": "CLOUDFLARE_TUNNEL_TOKEN",
             "default_value": "",
             "user_viewable": true,
             "user_editable": true,

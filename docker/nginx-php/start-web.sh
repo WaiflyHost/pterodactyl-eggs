@@ -30,7 +30,19 @@ fi
 
 php-fpm-run -F -y /etc/php-fpm.conf &
 PHP_FPM_PID=$!
-trap 'kill -TERM "$PHP_FPM_PID" 2>/dev/null' TERM INT QUIT
+
+# Optional: only runs if the customer set a Cloudflare Tunnel connector token (Cloudflare
+# dashboard -> Zero Trust -> Networks -> Tunnels). Same mechanism as any other Cloudflare Tunnel
+# origin - just a cloudflared client maintaining an outbound connection, nothing Cloudflare or
+# this box does automatically without it.
+CLOUDFLARED_PID=""
+if [[ -n "${CLOUDFLARE_TUNNEL_TOKEN}" ]]; then
+    echo "Starting Cloudflare Tunnel..."
+    cloudflared tunnel --no-autoupdate run --token "${CLOUDFLARE_TUNNEL_TOKEN}" &
+    CLOUDFLARED_PID=$!
+fi
+
+trap 'kill -TERM "$PHP_FPM_PID" ${CLOUDFLARED_PID:+"$CLOUDFLARED_PID"} 2>/dev/null' TERM INT QUIT
 
 if ! nginx -c /tmp/nginx.conf -t; then
     echo "nginx configuration test failed, aborting startup"

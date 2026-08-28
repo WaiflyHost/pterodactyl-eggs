@@ -23,6 +23,13 @@ RUN apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
     && curl -sS https://getcomposer.org/installer | php${PHP_VERSION} -- --install-dir=/usr/local/bin --filename=composer
 
+# Optional Cloudflare Tunnel support (CLOUDFLARE_TUNNEL_TOKEN env var, see start-web.sh) - a no-op
+# unless a customer sets a token, but the binary needs to already be in the image since the egg
+# has no arbitrary startup command to install it from.
+RUN curl -sSL -o /tmp/cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb \
+    && dpkg -i /tmp/cloudflared.deb \
+    && rm -f /tmp/cloudflared.deb
+
 # Non-root only (Wings always forces --user, never root): drop the default pool config that
 # assumes it can setuid to www-data, disable the daemon's own pidfile/log paths (redirect to
 # stderr instead) so nothing here needs write access outside /home/container and /tmp.

@@ -28,6 +28,50 @@ if [[ -n "${COMPOSER_MODULES}" ]]; then
     composer require ${COMPOSER_MODULES} --working-dir="/home/container/${DOCROOT}" --no-interaction || true
 fi
 
+# Optional self-service app config: /home/container/.env, KEY=VALUE per line (# comments, blank
+# lines ignored). Parsed as plain data - never sourced/eval'd, so it cannot run shell commands or
+# touch nginx/php-fpm's own config the way editing their raw config files used to allow on the old
+# egg. Exported before php-fpm starts so it reaches $_SERVER/getenv() in the app (php-fpm-pool.conf
+# already has clear_env=no). Lives one level above the docroot, so it's never web-reachable no
+# matter what nginx rule is or isn't in place. Deliberately outside the panel's egg-variable list:
+# this is the escape hatch for whatever a customer's specific app needs that we haven't (and won't)
+# add as a first-class egg variable one request at a time.
+ENV_FILE="/home/container/.env"
+RESERVED_ENV_KEYS=" PATH HOME USER PWD SHLVL _ SERVER_PORT DOCROOT STARTUP GIT_ADDRESS BRANCH USER_UPLOAD AUTO_UPDATE USERNAME ACCESS_TOKEN COMPOSER_MODULES CLOUDFLARE_TUNNEL_TOKEN "
+ENV_FILE_LOADED_COUNT=0
+if [[ -f "${ENV_FILE}" ]]; then
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        line="${line%$'\r'}"
+        [[ -z "$line" || "$line" == \#* ]] && continue
+        if [[ "$line" =~ ^([A-Za-z_][A-Za-z0-9_]*)=(.*)$ ]]; then
+            key="${BASH_REMATCH[1]}"
+            value="${BASH_REMATCH[2]}"
+            if [[ "$value" =~ ^\"(.*)\"$ ]] || [[ "$value" =~ ^\'(.*)\'$ ]]; then
+                value="${BASH_REMATCH[1]}"
+            fi
+            [[ "$key" == P_SERVER_* ]] && continue
+            [[ "${RESERVED_ENV_KEYS}" == *" ${key} "* ]] && continue
+            export "$key=$value"
+            ENV_FILE_LOADED_COUNT=$((ENV_FILE_LOADED_COUNT + 1))
+        fi
+    done < "${ENV_FILE}"
+fi
+
+cat <<EOF
+
+-----------------------------------------------------------------------
+App config: this egg only ships nginx + PHP-FPM, no editable server
+config, and no extra process besides the optional Cloudflare Tunnel
+below. Need your own env vars (DB credentials, API keys, ...)? Drop a
+plain "KEY=VALUE" per line (# for comments) into:
+  /home/container/.env
+It is only ever read as data (never executed), sits above your web
+root so it's never web-reachable, and is exported for PHP before
+PHP-FPM starts (so it reaches \$_SERVER / getenv() in your app).
+$( [[ ${ENV_FILE_LOADED_COUNT} -gt 0 ]] && echo "Loaded ${ENV_FILE_LOADED_COUNT} variable(s) from .env just now." || echo "No .env found - create one any time, it's picked up on next start/restart." )
+-----------------------------------------------------------------------
+EOF
+
 php-fpm-run -F -y /etc/php-fpm.conf &
 PHP_FPM_PID=$!
 

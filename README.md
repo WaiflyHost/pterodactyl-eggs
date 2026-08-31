@@ -61,6 +61,19 @@ needed). There is no exposed nginx config field and no `proxy_pass` target a cus
 internal infrastructure. Clones a Git repo into webroot/www (or use `USER_UPLOAD`); set `COMPOSER_MODULES`
 to have Composer packages installed on startup.
 
+Also supports an optional `CLOUDFLARE_TUNNEL_TOKEN` (starts `cloudflared` alongside nginx if set - a
+no-op otherwise) and a handful of named passthrough variables for common app config (`DB_HOST`,
+`DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASS`, `RESEND_API_KEY`) that just become environment variables
+your app can read via `$_SERVER`/`getenv()`.
+
+For anything else your app needs that isn't one of those named variables, drop a `.env` file at
+`/home/container/.env` - one `KEY=VALUE` per line, `#` for comments. It's read as plain data on every
+startup (never sourced or evaluated - it cannot run shell commands, and it cannot touch nginx's or
+PHP-FPM's own configuration) and exported before PHP-FPM starts, so anything in it also reaches
+`$_SERVER`/`getenv()`. The file lives one level above the docroot, so it's never web-reachable.
+A handful of reserved names (the egg's own variables, plus `SERVER_PORT`/`DOCROOT`/`PATH`/`HOME`/...)
+are ignored if present in the file, so it can't be used to fight the egg's own startup logic.
+
 ### Node.js + Python (combined)
 
 One image, both toolchains (several versions each of Node.js and Python), so you don't need to

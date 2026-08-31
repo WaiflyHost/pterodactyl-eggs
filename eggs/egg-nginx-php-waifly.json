@@ -101,6 +101,78 @@
             "user_viewable": true,
             "user_editable": true,
             "rules": "nullable|string"
+        },
+        {
+            "name": "Database Host",
+            "env_variable": "DB_HOST",
+            "description": "Optional. Populate with your database host if your app reads DB credentials from $_SERVER/getenv().",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string"
+        },
+        {
+            "name": "Database Port",
+            "env_variable": "DB_PORT",
+            "description": "Optional. Defaults to 3306 in most apps if left empty.",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string"
+        },
+        {
+            "name": "Database Name",
+            "env_variable": "DB_NAME",
+            "description": "Optional. Name of the database attached to this server.",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string"
+        },
+        {
+            "name": "Database User",
+            "env_variable": "DB_USER",
+            "description": "Optional. Username for the database attached to this server.",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string"
+        },
+        {
+            "name": "Database Password",
+            "env_variable": "DB_PASS",
+            "description": "Optional. Password for the database attached to this server.",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string"
+        },
+        {
+            "name": "Resend API Key",
+            "env_variable": "RESEND_API_KEY",
+            "description": "Optional. API key for the Resend transactional email service, if your app sends mail through it.",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string"
+        },
+        {
+            "name": "Custom API Key 1",
+            "env_variable": "OKAPPIKI_API_KEY",
+            "description": "Optional. Generic auth key/token your app can read from $_SERVER/getenv() - name it whatever your app expects; rename this variable's env_variable in your own egg copy if needed.",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string"
+        },
+        {
+            "name": "Custom API Key 2",
+            "env_variable": "TASE_API_KEY",
+            "description": "Optional. A second generic auth key/token slot, same idea as the first.",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string"
         }
     ]
 }

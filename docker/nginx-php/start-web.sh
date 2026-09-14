@@ -17,9 +17,7 @@ if [[ -d "${DOCROOT}/.git" ]] && [[ "${AUTO_UPDATE}" == "1" ]]; then
 fi
 
 if [ ! -f "${DOCROOT}/index.php" ] && [ ! -f "${DOCROOT}/index.html" ]; then
-    cat > "${DOCROOT}/index.php" <<'PHP'
-<?php phpinfo();
-PHP
+    cp /etc/nginx/default-index.html "${DOCROOT}/index.html"
 fi
 
 sed -e "s/__SERVER_PORT__/${SERVER_PORT}/" -e "s#__DOCROOT__#/home/container/${DOCROOT}#" /etc/nginx/nginx.conf.template > /tmp/nginx.conf
@@ -57,6 +55,21 @@ if [[ -f "${ENV_FILE}" ]]; then
     done < "${ENV_FILE}"
 fi
 
+cat <<EOF
+
+-----------------------------------------------------------------------
+App config: this egg only ships nginx + PHP-FPM, no editable server
+config, and no extra process besides the optional Cloudflare Tunnel
+below. Need your own env vars (DB credentials, API keys, ...)? Drop a
+plain "KEY=VALUE" per line (# for comments) into:
+  /home/container/.env
+It is only ever read as data (never executed), sits above your web
+root so it's never web-reachable, and is exported for PHP before
+PHP-FPM starts (so it reaches \$_SERVER / getenv() in your app).
+$( [[ ${ENV_FILE_LOADED_COUNT} -gt 0 ]] && echo "Loaded ${ENV_FILE_LOADED_COUNT} variable(s) from .env just now." || echo "No .env found - create one any time, it's picked up on next start/restart." )
+-----------------------------------------------------------------------
+EOF
+
 php-fpm-run -F -y /etc/php-fpm.conf &
 PHP_FPM_PID=$!
 
@@ -90,22 +103,8 @@ __          __   _  __ _
                           __/ |
                          |___/
 
+-----------------------------------------------------------------------
 BANNER
-printf '\033[1;36m-----------------------------------------------------------------------\n'
-printf 'App config: this egg only ships nginx + PHP-FPM, no editable server\n'
-printf 'config, and no extra process besides the optional Cloudflare Tunnel\n'
-printf 'below. Need your own env vars (DB credentials, API keys, ...)? Drop a\n'
-printf 'plain "KEY=VALUE" per line (# for comments) into:\n'
-printf '  /home/container/.env\n'
-printf 'It is only ever read as data (never executed), sits above your web\n'
-printf "root so it's never web-reachable, and is exported for PHP before\n"
-printf 'PHP-FPM starts (so it reaches $_SERVER / getenv() in your app).\n'
-if [[ ${ENV_FILE_LOADED_COUNT} -gt 0 ]]; then
-    printf 'Loaded %s variable(s) from .env just now.\n' "${ENV_FILE_LOADED_COUNT}"
-else
-    printf "No .env found - create one any time, it's picked up on next start/restart.\n"
-fi
-printf -- '-----------------------------------------------------------------------\033[0m\n\n'
 printf '\033[1;32mServer started\033[0m\n\n'
 
 exec nginx -c /tmp/nginx.conf -g 'daemon off;'

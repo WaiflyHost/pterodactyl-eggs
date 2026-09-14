@@ -42,6 +42,7 @@ RUN sed -i \
     && ln -sf /etc/php/${PHP_VERSION}/fpm/php-fpm.conf /etc/php-fpm.conf
 
 COPY nginx.conf.template /etc/nginx/nginx.conf.template
+COPY default-index.html /etc/nginx/default-index.html
 COPY start-web.sh /start-web.sh
 RUN chmod +x /start-web.sh
 

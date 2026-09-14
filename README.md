@@ -59,7 +59,9 @@ and PHP-FPM run together in the container and serve **only** `/home/container/we
 `/home/container/www` if that already exists - e.g. migrating from another nginx egg, no rename
 needed). There is no exposed nginx config field and no `proxy_pass` target a customer could point at
 internal infrastructure. Clones a Git repo into webroot/www (or use `USER_UPLOAD`); set `COMPOSER_MODULES`
-to have Composer packages installed on startup.
+to have Composer packages installed on startup. A fresh server with no `index.php`/`index.html` yet
+gets a branded default page (`default-index.html`) instead of a bare `phpinfo()` - it's overwritten
+automatically the moment real files land in the web root.
 
 Also supports an optional `CLOUDFLARE_TUNNEL_TOKEN` (starts `cloudflared` alongside nginx if set - a
 no-op otherwise) and a handful of named passthrough variables for common app config (`DB_HOST`,

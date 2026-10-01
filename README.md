@@ -87,8 +87,9 @@ lose your version choice. `MAIN_FILE` / `NODE_PACKAGES` / `NODE_ARGS` apply when
 
 ## Rebuilding the images yourself
 
-The `docker/` directory has the exact Dockerfiles and scripts used to build these images, in case you'd
-rather build and host your own copies:
+The `docker/` directory has the exact Dockerfiles and scripts used to build these images, and
+`build.sh` is what actually builds and pushes every version in one pass, in case you'd rather build
+and host your own copies:
 
 ```
 docker build -t your-registry/nodejs:22    --build-arg NODE_VERSION=22    docker/nodejs
@@ -97,6 +98,13 @@ docker build -t your-registry/go:1.25      --build-arg GO_VERSION=1.25    docker
 docker build -t your-registry/nginx-php:8.4 --build-arg PHP_VERSION=8.4   docker/nginx-php
 docker build -t your-registry/node-python:latest                          docker/node-python
 ```
+
+The nodejs image also takes an `NPM_VERSION` build-arg (`build.sh` computes it automatically via
+`resolve-npm-version.js`) - it's the newest npm release whose own `engines.node` range the chosen
+`NODE_VERSION` actually satisfies, rather than always `npm@latest`. The official Node image's bundled
+npm nags about being outdated on every install (its own version notice, unrelated to Node's), but
+blindly forcing `npm@latest` can require a newer Node than an older `NODE_VERSION` here actually has
+and leave that image with a broken npm.
 
 The `entrypoint.sh` in the nodejs/python/go images reads the `STARTUP` environment variable that Wings
 sets (with `{{VARIABLE}}` placeholders), substitutes them, and executes the result - this is what any

@@ -13,12 +13,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get update
 
 ARG PHP_VERSION
-RUN apt-get install -y --no-install-recommends \
+# PHP 8.5+ ships OPcache in core: there is no php${PHP_VERSION}-opcache package anymore
+RUN OPCACHE_PKG=""; \
+    if apt-cache show php${PHP_VERSION}-opcache >/dev/null 2>&1; then OPCACHE_PKG="php${PHP_VERSION}-opcache"; fi; \
+    apt-get install -y --no-install-recommends \
         nginx-light \
         php${PHP_VERSION}-fpm php${PHP_VERSION}-cli php${PHP_VERSION}-common \
         php${PHP_VERSION}-mysql php${PHP_VERSION}-curl php${PHP_VERSION}-gd \
         php${PHP_VERSION}-mbstring php${PHP_VERSION}-xml php${PHP_VERSION}-zip \
-        php${PHP_VERSION}-bcmath php${PHP_VERSION}-intl php${PHP_VERSION}-opcache \
+        php${PHP_VERSION}-bcmath php${PHP_VERSION}-intl ${OPCACHE_PKG} \
         php${PHP_VERSION}-sqlite3 php${PHP_VERSION}-imagick \
     && rm -rf /var/lib/apt/lists/* \
     && curl -sS https://getcomposer.org/installer | php${PHP_VERSION} -- --install-dir=/usr/local/bin --filename=composer

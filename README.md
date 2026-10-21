@@ -13,7 +13,7 @@ minor/patch release. All images are public on GHCR - no authentication needed to
 - **Node.js**: 16, 18, 19, 20, 21, 22, 23, 24, 25, 26 - `ghcr.io/waiflyhost/nodejs:<version>`
 - **Python**: 2.7, 3.8, 3.9, 3.10, 3.11, 3.12, 3.13, 3.14 - `ghcr.io/waiflyhost/python:<version>`
 - **Go**: 1.21 - 1.27 - `ghcr.io/waiflyhost/go:<version>`
-- **Nginx + PHP-FPM**: PHP 8.1 - 8.4 - `ghcr.io/waiflyhost/nginx-php:<version>`
+- **Nginx + PHP-FPM**: PHP 8.2 - 8.5 - `ghcr.io/waiflyhost/nginx-php:<version>`
 - **Node.js + Python (combined)**: single image with both toolchains, version picked independently at
   runtime via egg variables - `ghcr.io/waiflyhost/node-python:latest`
 

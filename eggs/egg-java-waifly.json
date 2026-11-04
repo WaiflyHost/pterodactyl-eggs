@@ -1,0 +1,57 @@
+{
+    "_comment": "Egg exported by Waifly - custom Java Universal runtime, self-built images.",
+    "meta": {
+        "version": "PTDL_v2",
+        "update_url": "https://raw.githubusercontent.com/WaiflyHost/pterodactyl-eggs/main/eggs/egg-java-waifly.json"
+    },
+    "exported_at": "2026-11-04T18:01:35+01:00",
+    "name": "Java Universal (Waifly)",
+    "author": "contact@waifly.com",
+    "description": "Generic Java egg using Waifly's own self-built images (ghcr.io/waiflyhost/java, Eclipse Temurin).\n\nUpload your files, then set Startup Command 1 (runs first) and Startup Command 2 (the running process, e.g. `java -jar app.jar`).",
+    "features": null,
+    "docker_images": {
+        "Java 27": "ghcr.io/waiflyhost/java:27",
+        "Java 25": "ghcr.io/waiflyhost/java:25",
+        "Java 21": "ghcr.io/waiflyhost/java:21",
+        "Java 17": "ghcr.io/waiflyhost/java:17",
+        "Java 11": "ghcr.io/waiflyhost/java:11",
+        "Java 8": "ghcr.io/waiflyhost/java:8"
+    },
+    "file_denylist": [],
+    "startup": "/start.sh",
+    "config": {
+        "files": "{}",
+        "startup": "{\r\n    \"done\": \"\",\r\n    \"userInteraction\": []\r\n}",
+        "logs": "{\r\n    \"custom\": true,\r\n    \"location\": \"logs/latest.log\"\r\n}",
+        "stop": "^C"
+    },
+    "scripts": {
+        "installation": {
+            "script": null,
+            "container": "alpine:3",
+            "entrypoint": "ash"
+        }
+    },
+    "variables": [
+        {
+            "name": "Startup Command 1",
+            "description": "First Startup Command",
+            "env_variable": "STARTUP_CMD",
+            "default_value": "echo hi",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|max:128",
+            "field_type": "text"
+        },
+        {
+            "name": "Startup Command 2 (Optional)",
+            "description": "Second Startup Command",
+            "env_variable": "SECOND_CMD",
+            "default_value": "java --version",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string|max:128",
+            "field_type": "text"
+        }
+    ]
+}

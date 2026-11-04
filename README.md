@@ -1,6 +1,6 @@
 # Waifly Pterodactyl Eggs
 
-Custom Node.js, Python, Go and Nginx+PHP eggs for [Pterodactyl](https://pterodactyl.io), self-built and
+Custom Node.js, Python, Go, Java and Nginx+PHP eggs for [Pterodactyl](https://pterodactyl.io), self-built and
 self-maintained by Waifly instead of depending on third-party image maintainers whose update cadence
 you don't control.
 
@@ -13,6 +13,7 @@ minor/patch release. All images are public on GHCR - no authentication needed to
 - **Node.js**: 16, 18, 19, 20, 21, 22, 23, 24, 25, 26 - `ghcr.io/waiflyhost/nodejs:<version>`
 - **Python**: 2.7, 3.8, 3.9, 3.10, 3.11, 3.12, 3.13, 3.14 - `ghcr.io/waiflyhost/python:<version>`
 - **Go**: 1.21 - 1.27 - `ghcr.io/waiflyhost/go:<version>`
+- **Java**: 8, 11, 17, 21, 25, 27 - `ghcr.io/waiflyhost/java:<version>` (Eclipse Temurin JDK)
 - **Nginx + PHP-FPM**: PHP 8.2 - 8.5 - `ghcr.io/waiflyhost/nginx-php:<version>`
 - **Node.js + Python (combined)**: single image with both toolchains, version picked independently at
   runtime via egg variables - `ghcr.io/waiflyhost/node-python:latest`
@@ -31,6 +32,7 @@ gd, mbstring, xml, zip, bcmath, intl, opcache, sqlite3, imagick). All images inc
    [`egg-nodejs-waifly.json`](eggs/egg-nodejs-waifly.json),
    [`egg-python-waifly.json`](eggs/egg-python-waifly.json),
    [`egg-go-waifly.json`](eggs/egg-go-waifly.json),
+   [`egg-java-waifly.json`](eggs/egg-java-waifly.json),
    [`egg-nginx-php-waifly.json`](eggs/egg-nginx-php-waifly.json),
    [`egg-node-python-waifly.json`](eggs/egg-node-python-waifly.json).
 4. That's it - each egg's Docker Images list already points at the public GHCR images, nothing else to
@@ -51,6 +53,13 @@ Clones a Git repo (or use `USER_UPLOAD` if you upload files yourself), then `go 
 resulting binary. The binary is only rebuilt when missing or when `AUTO_UPDATE` is enabled, so restarts
 after the first boot are fast. `BINARY_NAME` / `BUILD_PATH` / `BUILD_ARGS` / `RUN_ARGS` control the
 build and run invocation.
+
+### Java
+
+Same model as Node.js / Python: you upload your own files, then set two free-form shell commands -
+**Startup Command 1** (`STARTUP_CMD`) runs first, then **Startup Command 2** (`SECOND_CMD`) becomes the
+running process (e.g. `java -Xmx1G -jar app.jar`). Pick the Java version (8, 11, 17, 21, 25, 27) from
+the egg's Docker image list. Images are Eclipse Temurin JDK on Ubuntu with `git`, `curl`, `unzip`, `jq`.
 
 ### Nginx + PHP-FPM
 
